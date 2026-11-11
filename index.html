@@ -47,6 +47,9 @@
     .grp>.q{margin-top:10px}
     input[type=text],input[type=tel],input[type=email],input[type=date],textarea{width:100%;padding:12px 12px;border:1px solid var(--borde);border-radius:10px;font-size:16px;font-family:inherit;background:#fff;color:var(--texto);outline:none;-webkit-appearance:none;appearance:none;min-height:46px}
     input[type=date]{display:block}
+    select{width:100%;padding:12px 36px 12px 12px;border:1px solid var(--borde);border-radius:10px;font-size:16px;font-family:inherit;background:#fff url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2712%27 height=%278%27%3E%3Cpath d=%27M1 1l5 5 5-5%27 stroke=%27%2364748B%27 stroke-width=%272%27 fill=%27none%27/%3E%3C/svg%3E") no-repeat right 12px center;color:var(--texto);outline:none;-webkit-appearance:none;appearance:none;min-height:46px}
+    select:focus{border-color:var(--azul2);box-shadow:0 0 0 3px rgba(37,99,235,.15)}
+    .err select{border-color:var(--rojo)!important}
     textarea{min-height:110px;resize:vertical;line-height:1.45}
     input:focus,textarea:focus{border-color:var(--azul2);box-shadow:0 0 0 3px rgba(37,99,235,.15)}
     .err input,.err textarea,.err .opts,.err .firma-box{border-color:var(--rojo)!important}
@@ -88,6 +91,14 @@ const {useState,useEffect,useRef}=React;
 const PAISES=["Afganistán","Albania","Alemania","Angola","Argentina","Armenia","Bangladés","Belice","Bolivia","Brasil","Burkina Faso","Camerún","Chad","Chile","China","Colombia","Congo","Costa Rica","Cuba","Ecuador","Egipto","El Salvador","Eritrea","España","Estados Unidos","Etiopía","Filipinas","Georgia","Ghana","Guatemala","Guinea","Haití","Honduras","India","Irán","Irak","Jamaica","Kazajistán","Kirguistán","Líbano","Mali","Marruecos","Mauritania","México","Nepal","Nicaragua","Nigeria","Pakistán","Panamá","Paraguay","Perú","Rep. Dominicana","Rumania","Rusia","Senegal","Sierra Leona","Siria","Somalia","Sudán","Tayikistán","Turquía","Ucrania","Uganda","Uruguay","Uzbekistán","Venezuela","Vietnam","Yemen"];
 document.getElementById("paises").innerHTML=PAISES.map(p=>`<option value="${p}"></option>`).join("");
 
+const FRONTERA={
+  "California":["San Ysidro","Otay Mesa","Tecate","Calexico","Andrade"],
+  "Arizona":["San Luis","Yuma","Lukeville","Sasabe","Nogales","Naco","Douglas"],
+  "Nuevo México":["Columbus","Santa Teresa","Sunland Park","Antelope Wells"],
+  "Texas":["El Paso","Tornillo","Fabens","Presidio","Del Rio","Eagle Pass","Laredo","Roma","Rio Grande City","Hidalgo","McAllen","Pharr","Progreso","Donna","Los Indios","Brownsville"],
+};
+const ESTADO_DE={};Object.entries(FRONTERA).forEach(([e,cs])=>cs.forEach(c=>{ESTADO_DE[c]=e;}));
+const OTRA_FRONTERA="Otra ciudad o aeropuerto";
 const SI="Sí",NO="No";
 const esNA=v=>/^\s*n\s*\/?\s*a\s*$/i.test(v||"");
 const tieneHijos=d=>d.tieneHijos===SI;
@@ -154,8 +165,9 @@ const SECCIONES=[
  ]},
  {titulo:"Entradas a Estados Unidos",campos:[
   {id:"fechaEntrada",label:"Fecha que entró a Estados Unidos",type:"date",req:1},
-  {id:"fronteraCiudad",g:"Por qué frontera entró a Estados Unidos",sub:"Ciudad",half:1,req:1},
-  {id:"fronteraEstado",g:"Por qué frontera entró a Estados Unidos",sub:"Estado",half:1,req:1},
+  {id:"fronteraCiudad",g:"Por qué frontera entró a Estados Unidos",sub:"Ciudad",half:1,req:1,type:"frontera"},
+  {id:"fronteraEstado",g:"Por qué frontera entró a Estados Unidos",sub:"Estado (se llena solo)",half:1,req:1},
+  {id:"fronteraOtra",g:"Por qué frontera entró a Estados Unidos",sub:"Escriba la ciudad o el aeropuerto por donde entró",req:d=>d.fronteraCiudad===OTRA_FRONTERA,show:d=>d.fronteraCiudad===OTRA_FRONTERA},
   {id:"otrasEntradas",label:"Si tiene más de una entrada, por favor indique aquí todas las entradas, fecha y ciudad",type:"textarea"},
   {id:"otroPais",label:"Ha vivido en otro país más de 30 días (que no sea su país, ni Estados Unidos)",type:"radio",opts:[SI,NO],req:1},
   {id:"otroPaisNombre",label:"Si su respuesta fue sí, indique el nombre del país",req:d=>d.otroPais===SI,show:d=>d.otroPais===SI,list:"paises"},
@@ -307,6 +319,12 @@ function Campo({c,d,set,error}){
     ctrl=<div className="opts">{c.opts.map(o=>(
       <button type="button" key={o} className={"opt"+(v===o?" on":"")} onClick={()=>set(c.id,o)}><span className="dot"/>{o}</button>
     ))}</div>;
+  }else if(c.type==="frontera"){
+    ctrl=<select value={v} onChange={e=>{const x=e.target.value;set(c.id,x);if(ESTADO_DE[x])set("fronteraEstado",ESTADO_DE[x]);else if(x===OTRA_FRONTERA)set("fronteraEstado","");}}>
+      <option value="">Seleccione...</option>
+      {Object.entries(FRONTERA).map(([e,cs])=><optgroup key={e} label={e}>{cs.map(ci=><option key={ci} value={ci}>{ci}</option>)}</optgroup>)}
+      <option value={OTRA_FRONTERA}>{OTRA_FRONTERA}</option>
+    </select>;
   }else if(c.type==="textarea"){
     ctrl=<textarea value={v} rows={c.rows||4} onChange={e=>set(c.id,e.target.value)}/>;
   }else if(c.type==="foto"){
