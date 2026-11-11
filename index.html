@@ -165,8 +165,8 @@ const SECCIONES=[
  ]},
  {titulo:"Entradas a Estados Unidos",campos:[
   {id:"fechaEntrada",label:"Fecha que entró a Estados Unidos",type:"date",req:1},
-  {id:"fronteraCiudad",g:"Por qué frontera entró a Estados Unidos",sub:"Ciudad",half:1,req:1,type:"frontera"},
-  {id:"fronteraEstado",g:"Por qué frontera entró a Estados Unidos",sub:"Estado (se llena solo)",half:1,req:1},
+  {id:"fronteraCiudad",g:"Por qué frontera entró a Estados Unidos",subr:"Ciudad",sub:<>Ciudad<br/><b style={{color:"#0F172A"}}>¿No está su ciudad? Escoja "OTRA CIUDAD O AEROPUERTO" al final de la lista.</b></>,req:1,type:"frontera"},
+  {id:"fronteraEstado",g:"Por qué frontera entró a Estados Unidos",subr:"Estado",sub:"Estado (se llena solo)",req:1},
   {id:"fronteraOtra",g:"Por qué frontera entró a Estados Unidos",sub:"Escriba la ciudad o el aeropuerto por donde entró",req:d=>d.fronteraCiudad===OTRA_FRONTERA,show:d=>d.fronteraCiudad===OTRA_FRONTERA},
   {id:"otrasEntradas",label:"Si tiene más de una entrada, por favor indique aquí todas las entradas, fecha y ciudad",type:"textarea"},
   {id:"otroPais",label:"Ha vivido en otro país más de 30 días (que no sea su país, ni Estados Unidos)",type:"radio",opts:[SI,NO],req:1},
@@ -273,7 +273,7 @@ const visible=(c,d)=>!c.show||c.show(d);
 const requerido=(c,d)=>typeof c.req==="function"?c.req(d):!!c.req;
 const fmtFecha=v=>{const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(v||"");return m?`${m[2]}-${m[3]}-${m[1]}`:v;};
 const fmtTel=v=>{const n=(v||"").replace(/\D/g,"").slice(0,10);if(n.length<4)return n;if(n.length<7)return`(${n.slice(0,3)}) ${n.slice(3)}`;return`(${n.slice(0,3)}) ${n.slice(3,6)}-${n.slice(6)}`;};
-const etiqueta=c=>(c.pre?c.pre+" — ":"")+(c.g?`${c.g} — ${c.sub}`:c.label);
+const etiqueta=c=>(c.pre?c.pre+" — ":"")+(c.g?`${c.g} — ${c.subr||c.sub}`:c.label);
 const vacio=v=>v==null||(typeof v==="string"&&v.trim()==="");
 
 function comprimirFoto(file){
@@ -323,7 +323,10 @@ function Campo({c,d,set,error}){
     ctrl=<select value={v} onChange={e=>{const x=e.target.value;set(c.id,x);if(ESTADO_DE[x])set("fronteraEstado",ESTADO_DE[x]);else if(x===OTRA_FRONTERA)set("fronteraEstado","");}}>
       <option value="">Seleccione...</option>
       {Object.entries(FRONTERA).map(([e,cs])=><optgroup key={e} label={e}>{cs.map(ci=><option key={ci} value={ci}>{ci}</option>)}</optgroup>)}
-      <option value={OTRA_FRONTERA}>{OTRA_FRONTERA}</option>
+      <option disabled value="__sep">──────────────</option>
+      <optgroup label="¿NO ESTÁ EN LA LISTA?">
+        <option value={OTRA_FRONTERA} style={{fontWeight:700}}>➜ {OTRA_FRONTERA.toUpperCase()}</option>
+      </optgroup>
     </select>;
   }else if(c.type==="textarea"){
     ctrl=<textarea value={v} rows={c.rows||4} onChange={e=>set(c.id,e.target.value)}/>;
